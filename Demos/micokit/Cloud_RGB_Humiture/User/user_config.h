@@ -34,8 +34,8 @@
   #define PRODUCT_ID                   "e0ef908d"
   #define PRODUCT_KEY                  "86cc4e1b-b581-442f-bc73-e6d91df77dd8"
 #elif  MICOKIT_3165
-  #define PRODUCT_ID                   "e70ae531"
-  #define PRODUCT_KEY                  "292ce4ad-a3e4-41bb-9598-27aafd3d0fc4"
+  #define PRODUCT_ID                   "2f10b621"
+  #define PRODUCT_KEY                  "9a740523-d5f3-40f3-afb4-29b6d7c2726a"
 #elif  MICOKIT_G55
   #define PRODUCT_ID                   "5e0f6691"
   #define PRODUCT_KEY                  "14cf3d82-cdf2-4954-8dc6-0009cc9365f2"
@@ -74,7 +74,7 @@
  * If user configuration(params in flash) is changed, update this number to
  * indicate the bootloader to clean params in flash next time restart.
  */
-#define CONFIGURATION_VERSION          0x00000003
+#define CONFIGURATION_VERSION          0x00000004
 
 
 #endif  // __USER_CONFIG_H_

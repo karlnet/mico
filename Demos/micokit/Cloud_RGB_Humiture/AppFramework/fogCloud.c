@@ -199,7 +199,7 @@ OSStatus fogCloudSendtoChannel(const char* channel, unsigned char *inBuf, unsign
   cloud_if_log_trace();
   OSStatus err = kUnknownErr;
 
-  cloud_if_log("KIT => Cloud[%s]:[%d]=%.*s", channel, inBufLen, inBufLen, inBuf);
+//  cloud_if_log("KIT => Cloud[%s]:[%d]=%.*s", channel, inBufLen, inBufLen, inBuf);
   err = FogCloudPublishtoChannel(&easyCloudContext, channel, inBuf, inBufLen);
   require_noerr_action( err, exit, cloud_if_log("ERROR: fogCloudSendtoChannel failed! err=%d", err) );
   return kNoErr;

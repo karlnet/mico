@@ -41,6 +41,7 @@ extern bool rgbled_switch;
 extern int rgbled_hues;
 extern int rgbled_saturation;
 extern int rgbled_brightness;
+char qiniuHttpRequest[1024];
 
 extern volatile bool rgbled_changed;  // rgb led state changed flag
 
@@ -104,6 +105,26 @@ void user_downstream_thread(void* arg)
               device_switch_changed = true;
               device_switch = device_switch_tmp;
             }
+          }else if(!strcmp(key, "take_photo")){
+            const char *key,*token;
+            json_object_object_foreach(val, k, v) {
+              if(!strcmp(k, "key")){
+                key=json_object_get_string(v);
+                user_log("receive take photo:key=%s",key);
+              }else if(!strcmp(k, "token")){
+                token=json_object_get_string(v);    
+                user_log("receive take photo:token=%s",token);
+              }
+            }
+                  char *boundary="----------abcdef1234567890";
+            char *boundary_start="------------abcdef1234567890";
+              char *boundary_end="\r\n------------abcdef1234567890--\r\n";
+            int len =sprintf(qiniuHttpRequest,"POST http://upload.qiniu.com/\r\nContent-Type:multipart/form-data;boundary=%s\r\n--%s\r\nContent-Disposition:form-data; name=\"token\"\r\n\r\n%s\r\n--%s\r\nContent-Disposition:form-data; name=\"key\"\r\n\r\n%s\r\n--%s\r\nContent-Disposition:form-data;name=\"file\";filename=\"%s\"\r\nContent-Type:image/jpeg\r\n\r\n",boundary,boundary,token,boundary,key,boundary,key);
+            const char *image="hello world";
+            strcpy(qiniuHttpRequest+len,image);
+//            strcpy(qiniuHttpRequest+len+sizeof(image)-1,boundary_end);
+            user_log("http qinniu:len=%d,body=%s",sizeof(qiniuHttpRequest),qiniuHttpRequest);                 
+            
           }
           else{}
         }

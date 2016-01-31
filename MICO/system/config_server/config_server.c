@@ -499,6 +499,7 @@ OSStatus _LocalConfigRespondInComingMessage(int fd, HTTPHeader_t* inHeader, mico
           need_reboot = true;
         }else if(!strcmp(key, "Wi-Fi")){
           strncpy(inContext->flashContentInRam.micoSystemConfig.ssid, json_object_get_string(val), maxSsidLen);
+         
           inContext->flashContentInRam.micoSystemConfig.channel = 0;
           memset(inContext->flashContentInRam.micoSystemConfig.bssid, 0x0, 6);
           inContext->flashContentInRam.micoSystemConfig.security = SECURITY_TYPE_AUTO;

@@ -95,9 +95,9 @@ void user_upstream_thread(void* arg)
           if(app_context->appStatus.fogcloudStatus.isCloudConnected){
             // upload data string to fogcloud, the seconde param(NULL) means send to defalut topic: '<device_id>/out'
             MiCOFogCloudMsgSend(app_context, NULL, (unsigned char*)upload_data, strlen(upload_data));
-            user_log("upload data success! \t topic=%s/out \t dht11_temperature=%d, dht11_humidity=%d", 
-                     app_context->appConfig->fogcloudConfig.deviceId,
-                     dht11_temperature, dht11_humidity);
+//            user_log("upload data success! \t topic=%s/out \t dht11_temperature=%d, dht11_humidity=%d", 
+//                     app_context->appConfig->fogcloudConfig.deviceId,
+//                     dht11_temperature, dht11_humidity);
             err = kNoErr;
           }
         }
