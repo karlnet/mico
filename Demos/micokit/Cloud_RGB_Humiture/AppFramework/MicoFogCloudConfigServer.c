@@ -306,7 +306,10 @@ OSStatus _LocalConfigRespondInComingMessage(int fd, ECS_HTTPHeader_t* inHeader, 
                                         &httpResponse, &httpResponseLen );
       require_noerr( err, exit );
       require( httpResponse, exit );
+      fogcloud_config_log("httpResponse=%s", httpResponse);
+//       fogcloud_config_log("httpResponse start.");
       err = SocketSend( fd, httpResponse, httpResponseLen );
+//      fogcloud_config_log("httpResponse end.");
       SocketClose(&fd);
     }
     goto exit;

@@ -47,7 +47,7 @@
 #define FOGCLOUD_TOTAL_BUF_LENGTH         (FOGCLOUD_MAX_RECV_QUEUE_LENGTH*2048)
 
 // enalbe FogCloud auto activate function (user_token=MAC)
-#define ENABLE_FOGCLOUD_AUTO_ACTIVATE
+//#define ENABLE_FOGCLOUD_AUTO_ACTIVATE
 
 // disalbe FogCloud OTA check when system start
 //#define DISABLE_FOGCLOUD_OTA_CHECK

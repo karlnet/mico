@@ -116,14 +116,60 @@ void user_downstream_thread(void* arg)
                 user_log("receive take photo:token=%s",token);
               }
             }
-                  char *boundary="----------abcdef1234567890";
+            char *boundary="----------abcdef1234567890";
             char *boundary_start="------------abcdef1234567890";
-              char *boundary_end="\r\n------------abcdef1234567890--\r\n";
-            int len =sprintf(qiniuHttpRequest,"POST http://upload.qiniu.com/\r\nContent-Type:multipart/form-data;boundary=%s\r\n--%s\r\nContent-Disposition:form-data; name=\"token\"\r\n\r\n%s\r\n--%s\r\nContent-Disposition:form-data; name=\"key\"\r\n\r\n%s\r\n--%s\r\nContent-Disposition:form-data;name=\"file\";filename=\"%s\"\r\nContent-Type:image/jpeg\r\n\r\n",boundary,boundary,token,boundary,key,boundary,key);
+            char *boundary_end="\r\n------------abcdef1234567890--\r\n";
+            
+            int len =sprintf(qiniuHttpRequest,\
+"POST http://upload.qiniu.com/  HTTP/1.1\r\n\
+Content-Type:multipart/form-data;boundary=%s\r\n\
+Host: upload.qiniu.com\r\n\
+Content-Length:%d\r\n\r\n\
+%s\r\n\
+Content-Disposition:form-data; name=\"token\"\r\n\r\n\
+%s\r\n\
+%s\r\n\
+Content-Disposition:form-data; name=\"key\"\r\n\r\n\
+%s\r\n\
+%s\r\n\
+Content-Disposition:form-data;name=\"file\";filename=\"%s\"\r\n\
+Content-Type:image/jpeg\r\n\r\n",
+boundary,497,boundary_start,token,boundary_start,key,boundary_start,key);
+            
             const char *image="hello world";
             strcpy(qiniuHttpRequest+len,image);
-//            strcpy(qiniuHttpRequest+len+sizeof(image)-1,boundary_end);
-            user_log("http qinniu:len=%d,body=%s",sizeof(qiniuHttpRequest),qiniuHttpRequest);                 
+            strcpy(qiniuHttpRequest+len+strlen(image),boundary_end);
+            user_log("http qinniu:len=%d,body=%s",strlen(qiniuHttpRequest),qiniuHttpRequest);   
+            char ipstr[16];
+            struct sockaddr_t addr;
+            err = gethostbyname((char *)"upload.qiniu.com", (uint8_t *)ipstr, 16);
+            require_noerr(err, ReConnWithDelay);
+            int remoteTcpClient_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+             user_log("ip address=%s",ipstr);   
+            addr.s_ip = inet_addr(ipstr); 
+            addr.s_port = 80;
+            
+            err = connect(remoteTcpClient_fd, &addr, sizeof(addr));
+            require_noerr_quiet(err, ReConnWithDelay);
+            user_log("Remote server connected at port: %d, fd: %d",  addr.s_port,remoteTcpClient_fd);
+            err = SocketSend( remoteTcpClient_fd, qiniuHttpRequest, strlen(qiniuHttpRequest) );
+           
+            uint8_t *outDataBuffer = malloc(500);
+//            len = recv( remoteTcpClient_fd, outDataBuffer, 500, 0 );
+            ECS_HTTPHeader_t *httpHeader = NULL;
+            httpHeader = ECS_HTTPHeaderCreate();
+            
+            ECS_HTTPHeaderClear( httpHeader );
+            err = ECS_SocketReadHTTPHeader( remoteTcpClient_fd, httpHeader );
+              user_log("httpHeader: %s", httpHeader->buf);
+//            user_log("Remote server return len: %d,content:%s",  len,outDataBuffer);
+            SocketClose(&remoteTcpClient_fd);
+            
+          ReConnWithDelay:
+            if(remoteTcpClient_fd != -1){
+              SocketClose(&remoteTcpClient_fd);
+            }
+            
             
           }
           else{}

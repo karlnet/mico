@@ -46,7 +46,7 @@ extern uint8_t dht11_humidity;
 bool rgbled_switch = false;
 int rgbled_hues = 0;
 int rgbled_saturation = 0;
-int rgbled_brightness = 0;
+int rgbled_brightness = 20;
 
 // device on/off status
 volatile bool device_switch = true;  // device state true: on , false: off

@@ -74,7 +74,7 @@
  * If user configuration(params in flash) is changed, update this number to
  * indicate the bootloader to clean params in flash next time restart.
  */
-#define CONFIGURATION_VERSION          0x00000004
+#define CONFIGURATION_VERSION          0x00000009
 
 
 #endif  // __USER_CONFIG_H_
