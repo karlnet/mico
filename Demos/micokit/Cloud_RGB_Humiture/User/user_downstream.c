@@ -42,7 +42,7 @@ extern int rgbled_hues;
 extern int rgbled_saturation;
 extern int rgbled_brightness;
 char qiniuHttpRequest[1024];
-
+bool hasImage=false;
 extern volatile bool rgbled_changed;  // rgb led state changed flag
 
 /* Handle user message from cloud
@@ -158,10 +158,18 @@ boundary,497,boundary_start,token,boundary_start,key,boundary_start,key);
 //            len = recv( remoteTcpClient_fd, outDataBuffer, 500, 0 );
             ECS_HTTPHeader_t *httpHeader = NULL;
             httpHeader = ECS_HTTPHeaderCreate();
-            
+            require_action( httpHeader, exit, err = kNoMemoryErr );
             ECS_HTTPHeaderClear( httpHeader );
             err = ECS_SocketReadHTTPHeader( remoteTcpClient_fd, httpHeader );
-              user_log("httpHeader: %s", httpHeader->buf);
+            if(httpHeader->statusCode==ECS_kStatusOK){
+            hasImage=true;
+            
+            
+            
+            }
+//            user_log("httpHeader: %s", httpHeader->buf);
+//            user_log("http status: %d", httpHeader->statusCode);
+//            user_log("http body: %s", httpHeader->extraDataPtr);
 //            user_log("Remote server return len: %d,content:%s",  len,outDataBuffer);
             SocketClose(&remoteTcpClient_fd);
             

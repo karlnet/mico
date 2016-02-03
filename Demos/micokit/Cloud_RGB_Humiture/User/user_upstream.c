@@ -36,7 +36,8 @@
 // DTH11 termperature && humidity data
 uint8_t dht11_temperature = 0;
 uint8_t dht11_humidity = 0;
-  
+extern bool rgbled_switch;  
+extern bool hasImage;
 /* Message upload thread
  * Get DHT11 temperature/humidity data && upload to cloud
  */
@@ -85,6 +86,9 @@ void user_upstream_thread(void* arg)
         // add temperature/humidity data into a json oject
         json_object_object_add(send_json_object, "dht11_temperature", json_object_new_int(dht11_temperature)); 
         json_object_object_add(send_json_object, "dht11_humidity", json_object_new_int(dht11_humidity)); 
+        json_object_object_add(send_json_object, "rgbled_switch", json_object_new_boolean(rgbled_switch)); 
+         json_object_object_add(send_json_object, "hasImage", json_object_new_boolean(hasImage)); 
+         hasImage=false;
         upload_data = json_object_to_json_string(send_json_object);
         if(NULL == upload_data){
           user_log("create upload data string error!");
