@@ -74,13 +74,13 @@ OSStatus user_modules_init(void)
   button_init( IOBUTTON_USER_1, init);
 #endif
 
-#ifdef MICO_EXT_KEY2
-  init.gpio = MICO_EXT_KEY2;
-  init.pressed_func = user_key2_clicked_callback;
-  init.long_pressed_func = NULL;
-  init.long_pressed_timeout = 5000;
-  button_init( IOBUTTON_USER_2, init);
-#endif
+//#ifdef MICO_EXT_KEY2
+//  init.gpio = MICO_EXT_KEY2;
+//  init.pressed_func = user_key2_clicked_callback;
+//  init.long_pressed_func = NULL;
+//  init.long_pressed_timeout = 5000;
+//  button_init( IOBUTTON_USER_2, init);
+//#endif
 
   err = temp_hum_sensor_init();
   

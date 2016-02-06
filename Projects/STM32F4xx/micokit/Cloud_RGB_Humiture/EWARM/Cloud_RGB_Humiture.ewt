@@ -124,6 +124,12 @@
     <group>
       <name>User</name>
       <file>
+        <name>$PROJ_DIR$\..\..\..\..\..\Demos\micokit\Cloud_RGB_Humiture\User\camera.c</name>
+      </file>
+      <file>
+        <name>$PROJ_DIR$\..\..\..\..\..\Demos\micokit\Cloud_RGB_Humiture\User\camera.h</name>
+      </file>
+      <file>
         <name>$PROJ_DIR$\..\..\..\..\..\Demos\micokit\Cloud_RGB_Humiture\User\mico_config.h</name>
       </file>
       <file>
@@ -134,6 +140,12 @@
       </file>
       <file>
         <name>$PROJ_DIR$\..\..\..\..\..\Demos\micokit\Cloud_RGB_Humiture\User\user_main.c</name>
+      </file>
+      <file>
+        <name>$PROJ_DIR$\..\..\..\..\..\Demos\micokit\Cloud_RGB_Humiture\User\user_uart.c</name>
+      </file>
+      <file>
+        <name>$PROJ_DIR$\..\..\..\..\..\Demos\micokit\Cloud_RGB_Humiture\User\user_uart.h</name>
       </file>
       <file>
         <name>$PROJ_DIR$\..\..\..\..\..\Demos\micokit\Cloud_RGB_Humiture\User\user_upstream.c</name>

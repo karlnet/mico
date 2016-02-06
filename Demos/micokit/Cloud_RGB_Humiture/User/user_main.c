@@ -22,11 +22,11 @@
 #include "mico.h"
 #include "MICOAppDefine.h"
 #include "MicoFogCloud.h"
-
+#include "user_uart.h"
 #include "json_c/json.h"
 #include "VGM128064/oled.h"
 #include "P9813/hsb2rgb_led.h"
-
+#include "camera.h"
 /* User defined debug log functions
  * Add your own tag like: 'USER', the tag will be added at the beginning of a log
  * in MICO debug uart, when you call this function.
@@ -70,7 +70,26 @@ OSStatus user_main( app_context_t * const app_context )
   OSStatus err = kUnknownErr;
   // one line on OLED, 16 chars max, we just update line2~4 for the first line is not need to change
   char oled_show_line[OLED_DISPLAY_MAX_CHAR_PER_ROW+1] = {'\0'};
-
+  
+  err = user_uartInit();
+  require_noerr_action( err, exit, user_log("ERROR: user_uartInit err = %d.", err) );
+  
+  MicoGpioInitialize( (mico_gpio_t)MICO_GPIO_16, OUTPUT_PUSH_PULL );
+  
+  //  user_log("start photo...");
+  //  unsigned char* image="hello world";
+  //  user_uartSend( image,strlen(image));
+  //  char aa[200];
+  //  
+//  memset(aa, '\0', 200);
+//  
+//  mico_thread_sleep(5);
+//  
+//  int len=user_uartRecv((unsigned char *)aa, 200);
+//  user_log("uart_data_recv: [%d][%.*s]", len,  len,(unsigned char*)aa);
+//  user_log("end...");
+  
+  
   require(app_context, exit);
   
   hsb2rgb_led_init();   // init rgb led

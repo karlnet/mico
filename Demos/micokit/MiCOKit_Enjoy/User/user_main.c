@@ -166,8 +166,27 @@ OSStatus user_main( app_context_t * const app_context )
   
   user_log("User main task start...");
   
+  
+  
   err = user_uartInit();
   require_noerr_action( err, exit, user_log("ERROR: user_uartInit err = %d.", err) );
+ 
+  
+  
+  user_log("start photo...");
+  unsigned char* image="hello world";
+  user_uartSend( image,strlen(image));
+  char aa[200];
+  
+  memset(aa, '\0', 200);
+  
+  mico_thread_sleep(5);
+  
+  int len=user_uartRecv((unsigned char *)aa, 200);
+  user_log("uart_data_recv: [%d][%.*s]", len,  len,(unsigned char*)aa);
+  user_log("end...");
+  
+  
  
 #if (MICO_CLOUD_TYPE != CLOUD_DISABLED)
   /* start fogcloud msg handle task */

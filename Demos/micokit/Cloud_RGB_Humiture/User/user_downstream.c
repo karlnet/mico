@@ -19,10 +19,15 @@
 ******************************************************************************
 */ 
 
+
+#include "camera.h"
+
 #include "mico.h"
 #include "MicoFogCloud.h"
 #include "json_c/json.h"
 #include "P9813/hsb2rgb_led.h"
+#include "user_uart.h"
+
 
 
 /* User defined debug log functions
@@ -41,8 +46,16 @@ extern bool rgbled_switch;
 extern int rgbled_hues;
 extern int rgbled_saturation;
 extern int rgbled_brightness;
-char qiniuHttpRequest[1024];
+
+
+
 bool hasImage=false;
+char *boundary="----------abcdef1234567890";
+char *boundary_start="------------abcdef1234567890";
+char *boundary_end="\r\n------------abcdef1234567890--\r\n";
+extern u32 picLen;
+static uint8_t qiniuHttpRequest[10*1024];
+
 extern volatile bool rgbled_changed;  // rgb led state changed flag
 
 /* Handle user message from cloud
@@ -116,9 +129,27 @@ void user_downstream_thread(void* arg)
                 user_log("receive take photo:token=%s",token);
               }
             }
-            char *boundary="----------abcdef1234567890";
-            char *boundary_start="------------abcdef1234567890";
-            char *boundary_end="\r\n------------abcdef1234567890--\r\n";
+            
+            memset(qiniuHttpRequest,'\0',sizeof(qiniuHttpRequest));
+            
+            if( !send_photoBuf_cls(0) )
+            {
+              user_log("error cls phtot buffer !");
+            }
+            if( !send_start_photo(0) )
+            {
+              user_log("error start phtoto  !");
+            }
+            
+            picLen = send_read_len(0);
+            if( !picLen )
+            {
+              user_log("error get phtoto length !");
+            }
+            
+            user_log("uart_data_recv: [%d]", picLen);
+            
+            int content_length=486+picLen;
             
             int len =sprintf(qiniuHttpRequest,\
 "POST http://upload.qiniu.com/  HTTP/1.1\r\n\
@@ -134,25 +165,30 @@ Content-Disposition:form-data; name=\"key\"\r\n\r\n\
 %s\r\n\
 Content-Disposition:form-data;name=\"file\";filename=\"%s\"\r\n\
 Content-Type:image/jpeg\r\n\r\n",
-boundary,497,boundary_start,token,boundary_start,key,boundary_start,key);
+boundary,content_length,boundary_start,token,boundary_start,key,boundary_start,key);
             
-            const char *image="hello world";
-            strcpy(qiniuHttpRequest+len,image);
-            strcpy(qiniuHttpRequest+len+strlen(image),boundary_end);
-            user_log("http qinniu:len=%d,body=%s",strlen(qiniuHttpRequest),qiniuHttpRequest);   
+
+            send_get_photo( 0, picLen,qiniuHttpRequest+len,0);
+            user_log("uart_data_recv: [%02X,%02X,%02X,%02X]", qiniuHttpRequest[len],qiniuHttpRequest[1+len],qiniuHttpRequest[len+picLen-2],qiniuHttpRequest[len+picLen-1]);
+         
+            strcpy(qiniuHttpRequest+len+picLen,boundary_end);
+            
+//            user_log("http qinniu:len=%d,body=%s",strlen(qiniuHttpRequest),qiniuHttpRequest);   
             char ipstr[16];
             struct sockaddr_t addr;
             err = gethostbyname((char *)"upload.qiniu.com", (uint8_t *)ipstr, 16);
             require_noerr(err, ReConnWithDelay);
             int remoteTcpClient_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-             user_log("ip address=%s",ipstr);   
+            //             user_log("ip address=%s",ipstr);   
             addr.s_ip = inet_addr(ipstr); 
             addr.s_port = 80;
             
             err = connect(remoteTcpClient_fd, &addr, sizeof(addr));
             require_noerr_quiet(err, ReConnWithDelay);
+            
             user_log("Remote server connected at port: %d, fd: %d",  addr.s_port,remoteTcpClient_fd);
-            err = SocketSend( remoteTcpClient_fd, qiniuHttpRequest, strlen(qiniuHttpRequest) );
+            
+            err = SocketSend( remoteTcpClient_fd, qiniuHttpRequest, len+picLen+strlen(boundary_end) );
            
             uint8_t *outDataBuffer = malloc(500);
 //            len = recv( remoteTcpClient_fd, outDataBuffer, 500, 0 );
@@ -162,11 +198,10 @@ boundary,497,boundary_start,token,boundary_start,key,boundary_start,key);
             ECS_HTTPHeaderClear( httpHeader );
             err = ECS_SocketReadHTTPHeader( remoteTcpClient_fd, httpHeader );
             if(httpHeader->statusCode==ECS_kStatusOK){
-            hasImage=true;
-            
-            
-            
+              hasImage=true;
+              
             }
+            free(outDataBuffer);
 //            user_log("httpHeader: %s", httpHeader->buf);
 //            user_log("http status: %d", httpHeader->statusCode);
 //            user_log("http body: %s", httpHeader->extraDataPtr);
@@ -198,4 +233,6 @@ boundary,497,boundary_start,token,boundary_start,key,boundary_start,key);
 
 exit:
   user_log("ERROR: user_downstream_thread exit with err=%d", err);
+
+
 }

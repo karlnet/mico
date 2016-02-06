@@ -384,9 +384,9 @@ int uart_data_recv(struct mico_prop_t *prop, void *arg, void *val, uint32_t *val
     *val_len = recv_len;
     ret = 0;
     properties_user_log("uart_data_recv: [%d][%*.s]", *val_len, *val_len, (char*)val);
-    
+   
     // display string on OLED (max_len=32bytes)
-    properties_user_log("Show uart recv msg on OLED: [%d][%*.s]", *val_len, *val_len, (char*)val);
+    properties_user_log("Show uart recv msg on OLED: [%d][%.*s]", *val_len, *val_len, (char*)val);
     OLED_ShowString(OLED_DISPLAY_COLUMN_START, OLED_DISPLAY_ROW_2, (uint8_t*)"To Cloud:       ");
     memset(string_display_on_oled, ' ', MAX_USER_UART_BUF_SIZE);  // clean display char
     memcpy(string_display_on_oled, (uint8_t*)val, *val_len);

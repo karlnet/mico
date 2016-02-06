@@ -250,7 +250,7 @@ void init_architecture( void )
   mico_rtos_init_mutex( &stdio_rx_mutex );
   mico_rtos_unlock_mutex ( &stdio_rx_mutex );
 #endif
-
+  
   ring_buffer_init  ( (ring_buffer_t*)&stdio_rx_buffer, (uint8_t*)stdio_rx_data, STDIO_BUFFER_SIZE );
   platform_uart_init( &platform_uart_drivers[STDIO_UART], &platform_uart_peripherals[STDIO_UART], &stdio_uart_config, (ring_buffer_t*)&stdio_rx_buffer );
 #endif

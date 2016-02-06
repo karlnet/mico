@@ -31,13 +31,15 @@ ITMportsTermIO=0
 ITMportsLogFile=0
 ITMlogFile=$PROJ_DIR$\ITM.log
 [DebugChecksum]
-Checksum=2043945116
+Checksum=-583600990
 [CodeCoverage]
 Enabled=_ 0
 [CallStack]
 ShowArgs=0
 [Disassembly]
 MixedMode=1
+[watch_formats]
+Fmt0={W}1:qiniuHttpRequest	0	6
 [CallStackLog]
 Enabled=0
 [DriverProfiling]
