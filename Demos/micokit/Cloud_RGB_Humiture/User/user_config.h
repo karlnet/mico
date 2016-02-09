@@ -65,8 +65,9 @@
 
 /* stack size of the user_main thread */
 #define STACK_SIZE_USER_MAIN_THREAD    0x800
-
+   
 #define STACK_SIZE_USER_DOWNSTREAM_THREAD 0x400
+#define STACK_SIZE_TAKE_PHOTO_THREAD      0x400
 #define STACK_SIZE_USER_UPSTREAM_THREAD   0x400
 
 

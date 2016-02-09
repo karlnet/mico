@@ -44,22 +44,30 @@ extern uint8_t dht11_humidity;
 * b -- brightness
 */
 bool rgbled_switch = false;
+volatile bool rgbled_changed = false;  // rgb led state changed flag
+
+bool pump_switch=false;
+bool lamp_switch=false;
+volatile bool pump_changed = false; 
+volatile bool lamp_changed = false; 
+
 int rgbled_hues = 0;
 int rgbled_saturation = 0;
-int rgbled_brightness = 20;
+int rgbled_brightness = 128;
 
 // device on/off status
 volatile bool device_switch = true;  // device state true: on , false: off
 volatile bool device_switch_changed = false;  // device state changed flag
 
-volatile bool rgbled_changed = false;  // rgb led state changed flag
+
 
 static mico_thread_t user_downstrem_thread_handle = NULL;
 static mico_thread_t user_upstream_thread_handle = NULL;
-  
+static mico_thread_t take_photo_thread_handle = NULL;
+
 extern void user_downstream_thread(void* arg);
 extern void user_upstream_thread(void* arg);
-
+extern void take_photo_thread(void* arg);
 
 /* user main function, called by AppFramework after system init done && wifi
  * station on in user_main thread.
@@ -106,6 +114,11 @@ OSStatus user_main( app_context_t * const app_context )
                                   user_upstream_thread, STACK_SIZE_USER_UPSTREAM_THREAD, 
                                   app_context );
   require_noerr_action( err, exit, user_log("ERROR: create user_uptream thread failed!") );
+  //start camera thread 
+  err = mico_rtos_create_thread(&take_photo_thread_handle, MICO_APPLICATION_PRIORITY, "take photo", 
+                                take_photo_thread, STACK_SIZE_TAKE_PHOTO_THREAD, 
+                                NULL );
+  require_noerr_action( err, exit, user_log("ERROR: create take photo thread failed!") );    
   
   // user_main loop, update oled display every 1s
   while(1){

@@ -64,7 +64,7 @@ OSStatus user_uartSend(unsigned char *inBuf, unsigned int inBufLen)
     goto exit;
   }
   
-  user_uart_log("KIT => MCU:[%d]=%.*s", inBufLen, inBufLen, inBuf);
+//  user_uart_log("KIT => MCU:[%d]=%.*s", inBufLen, inBufLen, inBuf);
   
   err = MicoUartSend(USER_UART, inBuf, inBufLen);
   require_noerr_action( err, exit, user_uart_log("ERROR: send to USART error! err=%d", err) );

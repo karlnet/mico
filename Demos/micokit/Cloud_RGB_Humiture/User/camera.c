@@ -16,7 +16,7 @@
 //#if USING_CAMERA_FOR_MMS
 
 #define CLEAR_FRAME            1     //去掉返回图片数据携带的协议头和尾76 00 32 00
-#define ECHO_CMD_DEBUG_INFO    1     //1，开启指令调试；0，关闭
+#define ECHO_CMD_DEBUG_INFO    0     //1，开启指令调试；0，关闭
 
 #define camera_log(M, ...) custom_log("USER_DOWNSTREAM", M, ##__VA_ARGS__)
 
@@ -112,11 +112,13 @@ void SetSerailNumber(u8 *DstCmd, const u8 *SrcCmd, u8 SrcCmdLength,
 返回:无
 ******************************************************************/		
 void cam_write(const u8 *buf,u8 len)
-{ 
+{
   
-  camera_log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:%d",len);
+#if ECHO_CMD_DEBUG_INFO
+  camera_log("uart send command length=%d",len);
   MicoUartSend(STDIO_UART, buf, len);
-  camera_log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+  camera_log("uart send command length end ");
+#endif
   
   MicoGpioOutputHigh( (mico_gpio_t)MICO_GPIO_16 );
   mico_thread_msleep(100);
@@ -135,12 +137,12 @@ void cam_write(const u8 *buf,u8 len)
 ******************************************************************/		
 u16 cam_receiver(u8 *inBuf,u16 inBufLen)
 {    
-  int len=0;
- 
-  len=user_uartRecv(inBuf, inBufLen);  
+  int len=user_uartRecv(inBuf, inBufLen);  
   
-  camera_log("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB:%d",len);
-//  MicoUartSend(STDIO_UART, inBuf, inBufLen);
+#if ECHO_CMD_DEBUG_INFO
+  camera_log("uart receive command length=%d",len);
+  //  MicoUartSend(STDIO_UART, inBuf, inBufLen);
+#endif
   
   return len;
   
@@ -548,7 +550,16 @@ u8 send_get_photo(u16 staAdd,u16 readLen,u8 *buf,u8 Serialnumber)
         }
     }
     
-    
+    for (i = 0; i < 5; i++)
+    {
+        if ( buf[i + 5 + readLen] != ResponsePacket[i] )
+        {
+            return 0;
+        }
+    }
+    if( ( buf[5]!=0xFF)&& ( buf[6]!=0xD8)&&  ( buf[readLen+5-2]!=0xFF)&&( buf[readLen+5-1]!=0xD9))             {
+      return 0;
+    }
     //宏开关选择丢弃/保留 帧头帧尾76 00 32 00 00
     #if CLEAR_FRAME
 //    memcpy(buf,buf + 5,read_len);
