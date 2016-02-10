@@ -51,9 +51,11 @@ extern volatile bool rgbled_changed;  // rgb led state changed flag
 
 
 
-#define HTTP_BODY_SIZE_FIX 300;
+#define HTTP_BODY_STRING_SIZE 300;
+#define HTTP_HEADER_STRING_SIZE 159;
+
 #define IMAGE_SERVER    "upload.qiniu.com"
-#define  IMAGE_SERVER_PORT 80;
+#define IMAGE_SERVER_PORT 80;
 
 char *boundary="----------abcdef1234567890";
 char *boundary_start="------------abcdef1234567890";
@@ -62,11 +64,14 @@ char photo_key[128];
 char photo_token[256];
 //uint8_t qiniuHttpResponse [500];
 uint8_t qiniuHttpRequest[9*1024];
+mico_semaphore_t take_photo_sem = NULL;
+mico_semaphore_t switch_change_sem = NULL;
 
-static mico_semaphore_t take_photo_sem = NULL;
+volatile bool hasImage=false;
+volatile bool pump_switch=false;
+volatile bool lamp_switch=false;
 
 extern u32 picLen;
-bool hasImage=false;
 int remoteTcpClient_fd=-1;
 int len =0,content_length=0;
 
@@ -76,6 +81,8 @@ void take_photo_thread(void* arg)
   user_log_trace();  
   OSStatus err = kUnknownErr;
   
+  int http_header_size=0;
+  char tmp_size[5];
   char ipstr[16];
   struct sockaddr_t addr;
   
@@ -96,9 +103,7 @@ void take_photo_thread(void* arg)
     mico_rtos_get_semaphore(&take_photo_sem, MICO_WAIT_FOREVER);
     
     while(1){   
-      
-      memset(qiniuHttpRequest,'\0',sizeof(qiniuHttpRequest));
-      
+            
       if( !send_photoBuf_cls(0) )
       {
         user_log("error cls phtot buffer !");
@@ -116,11 +121,16 @@ void take_photo_thread(void* arg)
         continue;
       }
       
-      content_length=picLen+2*strlen(photo_key)+strlen(photo_token)+HTTP_BODY_SIZE_FIX;    
-//      user_log("uart_data_recv: [%d],[%d],[%d]", picLen,486+picLen,content_length);
+      memset(qiniuHttpRequest,'\0',sizeof(qiniuHttpRequest));
       
+      content_length=picLen+2*strlen(photo_key)+strlen(photo_token)+HTTP_BODY_STRING_SIZE;    
+//      sprintf(tmp_size,"%d",content_length);
+//      http_header_size=strlen(tmp_size)+HTTP_HEADER_STRING_SIZE;
+           
       len =sprintf(qiniuHttpRequest,"POST http://upload.qiniu.com/  HTTP/1.1\r\nContent-Type:multipart/form-data;boundary=%s\r\nHost: upload.qiniu.com\r\nContent-Length:%d\r\n\r\n%s\r\nContent-Disposition:form-data; name=\"token\"\r\n\r\n%s\r\n%s\r\nContent-Disposition:form-data; name=\"key\"\r\n\r\n%s\r\n%s\r\nContent-Disposition:form-data;name=\"file\";filename=\"%s\"\r\nContent-Type:image/jpeg\r\n\r\n",
                    boundary,content_length,boundary_start,photo_token,boundary_start,photo_key,boundary_start,photo_key);    
+      
+//      user_log("uart_data_recv: [%d],[%d],[%d],%s,%d,%d,%d,%d", picLen,486+picLen,content_length,tmp_size,http_header_size,len,http_header_size+content_length-picLen-30,strlen(tmp_size));
       
       if( !send_get_photo( 0, picLen,qiniuHttpRequest+len,0) )
       { 
@@ -151,8 +161,8 @@ void take_photo_thread(void* arg)
     err = ECS_SocketReadHTTPHeader( remoteTcpClient_fd, httpHeader );
     
     if(httpHeader->statusCode==ECS_kStatusOK){
-      hasImage=true;
-      
+//      hasImage=true;
+      mico_rtos_set_semaphore(&switch_change_sem) ;
     }
     
 //                user_log("httpHeader: %s", httpHeader->buf);
@@ -180,18 +190,12 @@ void user_downstream_thread(void* arg)
 {
   user_log_trace();
   OSStatus err = kUnknownErr;
-  app_context_t *app_context = (app_context_t *)arg;
+  app_context_t *app_context = (app_context_t *)arg;  
   fogcloud_msg_t *recv_msg = NULL;
   json_object *recv_json_object = NULL;
-  
-  
-  mico_rtos_init_semaphore( &take_photo_sem, 1);
-  
-  
-  
-  
-  bool device_switch_tmp = true;
-    
+  bool temp_switch = true; 
+ 
+  mico_rtos_init_semaphore( &take_photo_sem, 1);  
   require(app_context, exit);
   
   /* thread loop to handle cloud message */
@@ -234,10 +238,10 @@ void user_downstream_thread(void* arg)
             rgbled_changed = true;
           }
           else if(!strcmp(key, "device_switch")){
-            device_switch_tmp = json_object_get_boolean(val);
-            if(device_switch_tmp != device_switch){  // device on/off state changed
+            temp_switch = json_object_get_boolean(val);
+            if(temp_switch != device_switch){  // device on/off state changed
               device_switch_changed = true;
-              device_switch = device_switch_tmp;
+              device_switch = temp_switch;
             }
           }else if(!strcmp(key, "take_photo")){   
                         
@@ -254,6 +258,20 @@ void user_downstream_thread(void* arg)
               }
             }
             mico_rtos_set_semaphore(&take_photo_sem)    ;    
+          }
+          else if(!strcmp(key, "lamp_switch")){
+            temp_switch = json_object_get_int(val);
+            if(temp_switch!=lamp_switch){
+              lamp_switch = temp_switch;
+              mico_rtos_set_semaphore(&switch_change_sem) ;
+            }
+          }
+          else if(!strcmp(key, "pump_switch")){
+            temp_switch = json_object_get_int(val);
+            if(temp_switch!=lamp_switch){
+              lamp_switch = temp_switch;
+              mico_rtos_set_semaphore(&switch_change_sem) ;
+            }
           }
           else{}
         }

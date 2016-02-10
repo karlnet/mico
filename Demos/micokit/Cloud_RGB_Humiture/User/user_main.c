@@ -46,10 +46,7 @@ extern uint8_t dht11_humidity;
 bool rgbled_switch = false;
 volatile bool rgbled_changed = false;  // rgb led state changed flag
 
-bool pump_switch=false;
-bool lamp_switch=false;
-volatile bool pump_changed = false; 
-volatile bool lamp_changed = false; 
+
 
 int rgbled_hues = 0;
 int rgbled_saturation = 0;

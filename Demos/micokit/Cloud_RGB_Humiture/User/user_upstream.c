@@ -36,8 +36,14 @@
 // DTH11 termperature && humidity data
 uint8_t dht11_temperature = 0;
 uint8_t dht11_humidity = 0;
+
 extern bool rgbled_switch;  
-extern bool hasImage;
+
+extern volatile bool hasImage;
+extern volatile bool pump_switch;
+extern volatile bool lamp_switch;
+extern mico_semaphore_t switch_change_sem;
+
 /* Message upload thread
  * Get DHT11 temperature/humidity data && upload to cloud
  */
@@ -87,8 +93,8 @@ void user_upstream_thread(void* arg)
         json_object_object_add(send_json_object, "dht11_temperature", json_object_new_int(dht11_temperature)); 
         json_object_object_add(send_json_object, "dht11_humidity", json_object_new_int(dht11_humidity)); 
         json_object_object_add(send_json_object, "rgbled_switch", json_object_new_boolean(rgbled_switch)); 
-         json_object_object_add(send_json_object, "hasImage", json_object_new_boolean(hasImage)); 
-         hasImage=false;
+//      json_object_object_add(send_json_object, "hasImage", json_object_new_boolean(hasImage)); 
+        
         upload_data = json_object_to_json_string(send_json_object);
         if(NULL == upload_data){
           user_log("create upload data string error!");
@@ -120,4 +126,66 @@ exit:
     user_log("ERROR: user_uptream exit with err=%d", err);
   }
   mico_rtos_delete_thread(NULL);  // delete current thread
+}
+
+
+
+void user2_upstream_thread(void* arg)
+{
+  user_log_trace();
+  OSStatus err = kUnknownErr;
+  app_context_t *app_context = (app_context_t *)arg;
+  
+  json_object *send_json_object = NULL;
+  const char *upload_data = NULL;
+  
+  mico_rtos_init_semaphore( &switch_change_sem, 1);
+  
+  require(app_context, exit);
+  
+  /* thread loop */
+  while(1){
+    
+    mico_rtos_get_semaphore(&switch_change_sem, MICO_WAIT_FOREVER);
+    
+    // create json object to format upload data
+    send_json_object = json_object_new_object();
+    if(NULL == send_json_object){
+      user_log("create json object error!");
+      err = kNoMemoryErr;
+    }
+    else{
+      // add temperature/humidity data into a json oject
+      json_object_object_add(send_json_object, "lamp_switch", json_object_new_boolean(lamp_switch));
+      json_object_object_add(send_json_object, "pump_switch", json_object_new_boolean(pump_switch)); 
+      json_object_object_add(send_json_object, "hasImage", json_object_new_boolean(hasImage)); 
+      
+      upload_data = json_object_to_json_string(send_json_object);
+      if(NULL == upload_data){
+        user_log("create upload data string error!");
+        err = kNoMemoryErr;
+      }
+      else{
+        // check fogcloud connect status
+        if(app_context->appStatus.fogcloudStatus.isCloudConnected){
+          // upload data string to fogcloud, the seconde param(NULL) means send to defalut topic: '<device_id>/out'
+          MiCOFogCloudMsgSend(app_context, NULL, (unsigned char*)upload_data, strlen(upload_data));
+          //            user_log("upload data success! \t topic=%s/out \t dht11_temperature=%d, dht11_humidity=%d", 
+          //                     app_context->appConfig->fogcloudConfig.deviceId,
+          //                     dht11_temperature, dht11_humidity);
+          err = kNoErr;
+        }
+      }
+    }
+    // free json object memory
+    json_object_put(send_json_object);
+    send_json_object = NULL;    
+    
+  }
+exit:
+  if(kNoErr != err){
+    user_log("ERROR: user_uptream exit with err=%d", err);
+  }
+  mico_rtos_delete_thread(NULL);  // delete current thread
+  
 }
