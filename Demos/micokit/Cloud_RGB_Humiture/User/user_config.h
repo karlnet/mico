@@ -69,7 +69,7 @@
 #define STACK_SIZE_USER_DOWNSTREAM_THREAD 0x400
 #define STACK_SIZE_TAKE_PHOTO_THREAD      0x400
 #define STACK_SIZE_USER_UPSTREAM_THREAD   0x400
-
+#define STACK_SIZE_USER2_UPSTREAM_THREAD   0x400
 
 /* User provided configurations seed
  * If user configuration(params in flash) is changed, update this number to

@@ -92,7 +92,7 @@ void user_upstream_thread(void* arg)
         // add temperature/humidity data into a json oject
         json_object_object_add(send_json_object, "dht11_temperature", json_object_new_int(dht11_temperature)); 
         json_object_object_add(send_json_object, "dht11_humidity", json_object_new_int(dht11_humidity)); 
-        json_object_object_add(send_json_object, "rgbled_switch", json_object_new_boolean(rgbled_switch)); 
+//        json_object_object_add(send_json_object, "rgbled_switch", json_object_new_boolean(rgbled_switch)); 
 //      json_object_object_add(send_json_object, "hasImage", json_object_new_boolean(hasImage)); 
         
         upload_data = json_object_to_json_string(send_json_object);
@@ -159,7 +159,7 @@ void user2_upstream_thread(void* arg)
       json_object_object_add(send_json_object, "lamp_switch", json_object_new_boolean(lamp_switch));
       json_object_object_add(send_json_object, "pump_switch", json_object_new_boolean(pump_switch)); 
       json_object_object_add(send_json_object, "hasImage", json_object_new_boolean(hasImage)); 
-      
+      hasImage=false;
       upload_data = json_object_to_json_string(send_json_object);
       if(NULL == upload_data){
         user_log("create upload data string error!");

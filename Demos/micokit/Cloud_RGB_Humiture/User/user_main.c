@@ -60,10 +60,12 @@ volatile bool device_switch_changed = false;  // device state changed flag
 
 static mico_thread_t user_downstrem_thread_handle = NULL;
 static mico_thread_t user_upstream_thread_handle = NULL;
+static mico_thread_t user2_upstream_thread_handle = NULL;
 static mico_thread_t take_photo_thread_handle = NULL;
 
 extern void user_downstream_thread(void* arg);
 extern void user_upstream_thread(void* arg);
+extern void user2_upstream_thread(void* arg);
 extern void take_photo_thread(void* arg);
 
 /* user main function, called by AppFramework after system init done && wifi
@@ -109,6 +111,11 @@ OSStatus user_main( app_context_t * const app_context )
   // start the upstream thread to upload temperature && humidity to user
   err = mico_rtos_create_thread(&user_upstream_thread_handle, MICO_APPLICATION_PRIORITY, "user_upstream", 
                                   user_upstream_thread, STACK_SIZE_USER_UPSTREAM_THREAD, 
+                                  app_context );
+  require_noerr_action( err, exit, user_log("ERROR: create user_uptream thread failed!") );
+   // start the 2 upstream thread to upload temperature && humidity to user
+  err = mico_rtos_create_thread(&user2_upstream_thread_handle, MICO_APPLICATION_PRIORITY, "user2_upstream", 
+                                  user2_upstream_thread, STACK_SIZE_USER2_UPSTREAM_THREAD, 
                                   app_context );
   require_noerr_action( err, exit, user_log("ERROR: create user_uptream thread failed!") );
   //start camera thread 

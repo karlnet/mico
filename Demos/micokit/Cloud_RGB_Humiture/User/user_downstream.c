@@ -161,7 +161,7 @@ void take_photo_thread(void* arg)
     err = ECS_SocketReadHTTPHeader( remoteTcpClient_fd, httpHeader );
     
     if(httpHeader->statusCode==ECS_kStatusOK){
-//      hasImage=true;
+      hasImage=true;
       mico_rtos_set_semaphore(&switch_change_sem) ;
     }
     
@@ -221,29 +221,30 @@ void user_downstream_thread(void* arg)
       recv_json_object = json_tokener_parse((const char*)(recv_msg->data + recv_msg->topic_len));
       if (NULL != recv_json_object){
         json_object_object_foreach(recv_json_object, key, val) {
-          if(!strcmp(key, "rgbled_switch")){
-            rgbled_switch = json_object_get_boolean(val);
-            rgbled_changed = true;
-          }
-          else if(!strcmp(key, "rgbled_hues")){
-            rgbled_hues = json_object_get_int(val);
-            rgbled_changed = true;
-          }
-          else if(!strcmp(key, "rgbled_saturation")){
-            rgbled_saturation = json_object_get_int(val);
-            rgbled_changed = true;
-          }
-          else if(!strcmp(key, "rgbled_brightness")){
-            rgbled_brightness = json_object_get_int(val);
-            rgbled_changed = true;
-          }
-          else if(!strcmp(key, "device_switch")){
-            temp_switch = json_object_get_boolean(val);
-            if(temp_switch != device_switch){  // device on/off state changed
-              device_switch_changed = true;
-              device_switch = temp_switch;
-            }
-          }else if(!strcmp(key, "take_photo")){   
+//          if(!strcmp(key, "rgbled_switch")){
+//            rgbled_switch = json_object_get_boolean(val);
+//            rgbled_changed = true;
+//          }
+//          else if(!strcmp(key, "rgbled_hues")){
+//            rgbled_hues = json_object_get_int(val);
+//            rgbled_changed = true;
+//          }
+//          else if(!strcmp(key, "rgbled_saturation")){
+//            rgbled_saturation = json_object_get_int(val);
+//            rgbled_changed = true;
+//          }
+//          else if(!strcmp(key, "rgbled_brightness")){
+//            rgbled_brightness = json_object_get_int(val);
+//            rgbled_changed = true;
+//          }
+//          else if(!strcmp(key, "device_switch")){
+//            temp_switch = json_object_get_boolean(val);
+//            if(temp_switch != device_switch){  // device on/off state changed
+//              device_switch_changed = true;
+//              device_switch = temp_switch;
+//            }
+//          }else
+            if(!strcmp(key, "take_photo")){   
                         
             memset(photo_key,'\0',sizeof(photo_key));
             memset(photo_token,'\0',sizeof(photo_token));
@@ -262,14 +263,22 @@ void user_downstream_thread(void* arg)
           else if(!strcmp(key, "lamp_switch")){
             temp_switch = json_object_get_int(val);
             if(temp_switch!=lamp_switch){
-              lamp_switch = temp_switch;
+               lamp_switch = temp_switch;
+               
+              if(lamp_switch){
+                hsb2rgb_led_open(rgbled_hues, rgbled_saturation, rgbled_brightness);  // open rgb led
+              }else{
+                hsb2rgb_led_close();  // close rgb led
+              }
+              
               mico_rtos_set_semaphore(&switch_change_sem) ;
             }
           }
           else if(!strcmp(key, "pump_switch")){
             temp_switch = json_object_get_int(val);
-            if(temp_switch!=lamp_switch){
-              lamp_switch = temp_switch;
+            if(temp_switch!=pump_switch){
+              pump_switch = temp_switch;
+              
               mico_rtos_set_semaphore(&switch_change_sem) ;
             }
           }
