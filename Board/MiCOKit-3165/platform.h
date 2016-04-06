@@ -318,7 +318,7 @@ typedef enum
 #define Arduino_D6          (MICO_GPIO_14) 
 #define Arduino_D7          (MICO_GPIO_NONE)
 
-#define Arduino_D8          (MICO_GPIO_35)
+#define Arduino_D8          (MICO_GPIO_18)  // edit by hhnext zhang
 #define Arduino_D9          (MICO_GPIO_27)
 #define Arduino_CS          (MICO_GPIO_2)
 #define Arduino_SI          (FLASH_PIN_SPI_MOSI)

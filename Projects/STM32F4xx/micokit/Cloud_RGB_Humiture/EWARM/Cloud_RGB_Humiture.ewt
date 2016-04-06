@@ -124,6 +124,12 @@
     <group>
       <name>User</name>
       <file>
+        <name>$PROJ_DIR$\..\..\..\..\..\Demos\micokit\Cloud_RGB_Humiture\User\am2301.c</name>
+      </file>
+      <file>
+        <name>$PROJ_DIR$\..\..\..\..\..\Demos\micokit\Cloud_RGB_Humiture\User\am2301.h</name>
+      </file>
+      <file>
         <name>$PROJ_DIR$\..\..\..\..\..\Demos\micokit\Cloud_RGB_Humiture\User\camera.c</name>
       </file>
       <file>

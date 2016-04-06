@@ -38,8 +38,8 @@ uint8_t dht11_temperature = 0;
 uint8_t dht11_humidity = 0;
 
 extern bool rgbled_switch;  
-
-extern volatile bool hasImage;
+extern uint8_t msg_id;
+//extern volatile bool hasImage;
 extern volatile bool pump_switch;
 extern volatile bool lamp_switch;
 extern mico_semaphore_t switch_change_sem;
@@ -81,8 +81,8 @@ void user_upstream_thread(void* arg)
     }
     else{
       err = kNoErr;
-      
-      // create json object to format upload data
+      user_log("dht11_temperature=%d, dht11_humidity=%d",dht11_temperature, dht11_humidity);
+//       create json object to format upload data
       send_json_object = json_object_new_object();
       if(NULL == send_json_object){
         user_log("create json object error!");
@@ -90,10 +90,14 @@ void user_upstream_thread(void* arg)
       }
       else{
         // add temperature/humidity data into a json oject
+      
         json_object_object_add(send_json_object, "dht11_temperature", json_object_new_int(dht11_temperature)); 
         json_object_object_add(send_json_object, "dht11_humidity", json_object_new_int(dht11_humidity)); 
-//        json_object_object_add(send_json_object, "rgbled_switch", json_object_new_boolean(rgbled_switch)); 
-//      json_object_object_add(send_json_object, "hasImage", json_object_new_boolean(hasImage)); 
+        json_object_object_add(send_json_object, "lamp_switch", json_object_new_boolean(lamp_switch));
+        json_object_object_add(send_json_object, "pump_switch", json_object_new_boolean(pump_switch)); 
+       
+        //        json_object_object_add(send_json_object, "rgbled_switch", json_object_new_boolean(rgbled_switch)); 
+        //      json_object_object_add(send_json_object, "hasImage", json_object_new_boolean(hasImage)); 
         
         upload_data = json_object_to_json_string(send_json_object);
         if(NULL == upload_data){
@@ -139,6 +143,8 @@ void user2_upstream_thread(void* arg)
   json_object *send_json_object = NULL;
   const char *upload_data = NULL;
   
+ 
+//  user_log("ip address is :%s", ip_address);
   mico_rtos_init_semaphore( &switch_change_sem, 1);
   
   require(app_context, exit);
@@ -155,11 +161,35 @@ void user2_upstream_thread(void* arg)
       err = kNoMemoryErr;
     }
     else{
+      
+      switch (msg_id )
+      {
+      case 1:
+        {
+          json_object_object_add(send_json_object, "lamp_switch", json_object_new_boolean(lamp_switch));
+          break;
+        }
+      case 2:
+        {
+          json_object_object_add(send_json_object, "pump_switch", json_object_new_boolean(pump_switch)); 
+          break;
+        }
+      case 3:
+        {
+          json_object_object_add(send_json_object, "ip_address", json_object_new_string(app_context->mico_context->micoStatus.localIp)); 
+          break;
+        }
+      case 4:
+        {
+          json_object_object_add(send_json_object, "hasImage", json_object_new_boolean(true)); 
+          break;
+        }
+      default:
+        {
+          break;
+        }
+      }   
       // add temperature/humidity data into a json oject
-      json_object_object_add(send_json_object, "lamp_switch", json_object_new_boolean(lamp_switch));
-      json_object_object_add(send_json_object, "pump_switch", json_object_new_boolean(pump_switch)); 
-      json_object_object_add(send_json_object, "hasImage", json_object_new_boolean(hasImage)); 
-      hasImage=false;
       upload_data = json_object_to_json_string(send_json_object);
       if(NULL == upload_data){
         user_log("create upload data string error!");

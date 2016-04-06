@@ -120,13 +120,14 @@ void cam_write(const u8 *buf,u8 len)
   camera_log("uart send command length end ");
 #endif
   
-  MicoGpioOutputHigh( (mico_gpio_t)MICO_GPIO_16 );
-  mico_thread_msleep(100);
+  MicoGpioOutputHigh( (mico_gpio_t)MICO_GPIO_2 );
+  
   
   user_uartSend( buf,len);
   
-  MicoGpioOutputLow( (mico_gpio_t)MICO_GPIO_16 );
-  
+ 
+  MicoGpioOutputLow( (mico_gpio_t)MICO_GPIO_2 );
+ 
 }
 
 /****************************************************************
@@ -141,7 +142,7 @@ u16 cam_receiver(u8 *inBuf,u16 inBufLen)
   
 #if ECHO_CMD_DEBUG_INFO
   camera_log("uart receive command length=%d",len);
-  //  MicoUartSend(STDIO_UART, inBuf, inBufLen);
+    MicoUartSend(STDIO_UART, inBuf, inBufLen);
 #endif
   
   return len;
@@ -209,7 +210,7 @@ u8 camera_init(u8 Serialnumber,u8 nSetImageSize)
     //设置图片压缩率，该项不保存，每次上电后需重新设置
     if ( !send_compress_rate(Serialnumber,CurrentCompressRate))
     {
-        camera_log("\r\nsend_compress_rate error\r\n");
+        camera_log("\r\nsend_compress_rate error%02X\r\n",CurrentCompressRate);
         return 0;
     }
 

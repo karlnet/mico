@@ -89,7 +89,7 @@ uint8_t DHT11_Read_Bit(void)
     Delay_us(1);
   }
   
-  Delay_us(40);//wait 40us
+  Delay_us(30);//wait 40us
   
   if(DHT11_DQ_IN)
     return 1;

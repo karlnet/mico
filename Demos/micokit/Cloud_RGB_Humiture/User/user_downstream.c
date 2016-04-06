@@ -57,19 +57,22 @@ extern volatile bool rgbled_changed;  // rgb led state changed flag
 #define IMAGE_SERVER    "upload.qiniu.com"
 #define IMAGE_SERVER_PORT 80;
 
+uint8_t msg_id;
+
 char *boundary="----------abcdef1234567890";
 char *boundary_start="------------abcdef1234567890";
 char *boundary_end="\r\n------------abcdef1234567890--\r\n";
 char photo_key[128];
 char photo_token[256];
 //uint8_t qiniuHttpResponse [500];
-uint8_t qiniuHttpRequest[9*1024];
+char qiniuHttpRequest[9*1024];
 mico_semaphore_t take_photo_sem = NULL;
 mico_semaphore_t switch_change_sem = NULL;
 
-volatile bool hasImage=false;
+//volatile bool hasImage=false;
 volatile bool pump_switch=false;
 volatile bool lamp_switch=false;
+
 
 extern u32 picLen;
 int remoteTcpClient_fd=-1;
@@ -87,96 +90,106 @@ void take_photo_thread(void* arg)
   struct sockaddr_t addr;
   
   err = gethostbyname((char *)IMAGE_SERVER, (uint8_t *)ipstr, 16);
+  require_noerr(err, ReConnWithDelay);
+  
   addr.s_ip = inet_addr(ipstr); 
   addr.s_port = IMAGE_SERVER_PORT;
   
-  require_noerr(err, ReConnWithDelay); 
-  //    user_log("ip address=%s",ipstr);   
+   
+      user_log("ip address=%s",ipstr);   
   
  
   ECS_HTTPHeader_t *httpHeader = NULL;
   httpHeader = ECS_HTTPHeaderCreate();
   require_action( httpHeader, exit, err = kNoMemoryErr );
   
+  //camera_init(0,0x22);
+  
   while(1){
     
     mico_rtos_get_semaphore(&take_photo_sem, MICO_WAIT_FOREVER);
-    
-    while(1){   
-            
-      if( !send_photoBuf_cls(0) )
-      {
-        user_log("error cls phtot buffer !");
-        continue;
+//    while(1){  
+      while(1){   
+        
+        
+        if( !send_photoBuf_cls(0) )
+        {
+          user_log("error cls phtot buffer !");
+           mico_thread_msleep(1000);
+          continue;
+        }
+        if( !send_start_photo(0) )
+        {
+          user_log("error start phtoto  !");
+           mico_thread_msleep(1000);
+          continue;
+        }
+        
+        if( !(picLen = send_read_len(0) ))
+        {
+          user_log("error get phtoto length !");
+           mico_thread_msleep(1000);
+          continue;
+        }
+        
+        memset(qiniuHttpRequest,'\0',sizeof(qiniuHttpRequest));
+        
+        content_length=picLen+2*strlen(photo_key)+strlen(photo_token)+HTTP_BODY_STRING_SIZE;    
+        //      sprintf(tmp_size,"%d",content_length);
+        //      http_header_size=strlen(tmp_size)+HTTP_HEADER_STRING_SIZE;
+        
+        len =sprintf(qiniuHttpRequest,"POST http://upload.qiniu.com/  HTTP/1.1\r\nContent-Type:multipart/form-data;boundary=%s\r\nHost: upload.qiniu.com\r\nContent-Length:%d\r\n\r\n%s\r\nContent-Disposition:form-data; name=\"token\"\r\n\r\n%s\r\n%s\r\nContent-Disposition:form-data; name=\"key\"\r\n\r\n%s\r\n%s\r\nContent-Disposition:form-data;name=\"file\";filename=\"%s\"\r\nContent-Type:image/jpeg\r\n\r\n",
+                     boundary,content_length,boundary_start,photo_token,boundary_start,photo_key,boundary_start,photo_key);    
+        
+        //      user_log("uart_data_recv: [%d],[%d],[%d],%s,%d,%d,%d,%d", picLen,486+picLen,content_length,tmp_size,http_header_size,len,http_header_size+content_length-picLen-30,strlen(tmp_size));
+        
+        if( !send_get_photo( 0, picLen,qiniuHttpRequest+len,0) )
+        { 
+          user_log("error get phtoto : [%02X,%02X,%02X,%02X]", qiniuHttpRequest[len],qiniuHttpRequest[1+len],qiniuHttpRequest[len+picLen-2],qiniuHttpRequest[len+picLen-1]);
+          mico_thread_msleep(1000);
+          continue;
+        }
+        
+              user_log("uart_data_recv: [%02X,%02X,%02X,%02X]", qiniuHttpRequest[len],qiniuHttpRequest[1+len],qiniuHttpRequest[len+picLen-2],qiniuHttpRequest[len+picLen-1]);
+        break;
       }
-      if( !send_start_photo(0) )
-      {
-        user_log("error start phtoto  !");
-        continue;
+      
+      strcpy(qiniuHttpRequest+len+picLen,boundary_end);
+      
+      //    user_log("http qinniu:len=%d,body=%.*s",strlen(qiniuHttpRequest),486+160,qiniuHttpRequest);   
+      
+      int remoteTcpClient_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+      err = connect(remoteTcpClient_fd, &addr, sizeof(addr));
+      require_noerr_quiet(err, ReConnWithDelay);    
+      //    user_log("Remote server connected at port: %d, fd: %d",  addr.s_port,remoteTcpClient_fd);
+      
+      err = SocketSend( remoteTcpClient_fd, qiniuHttpRequest, len+picLen+strlen(boundary_end) );
+      
+      
+      //            len = recv( remoteTcpClient_fd, outDataBuffer, 500, 0 );
+      
+      
+      ECS_HTTPHeaderClear( httpHeader );
+      err = ECS_SocketReadHTTPHeader( remoteTcpClient_fd, httpHeader );
+      
+      if(httpHeader->statusCode==ECS_kStatusOK){
+        //      hasImage=true;
+        msg_id=4;
+        mico_rtos_set_semaphore(&switch_change_sem) ;
       }
       
-      if( !(picLen = send_read_len(0) ))
-      {
-        user_log("error get phtoto length !");
-        continue;
-      }
+      //                user_log("httpHeader: %s", httpHeader->buf);
+      //                user_log("http status: %d", httpHeader->statusCode);
+      //                user_log("http body: %s", httpHeader->extraDataPtr);
+      //                user_log("Remote server return len: %d,content:%s",  len,outDataBuffer);
+      SocketClose(&remoteTcpClient_fd);
       
-      memset(qiniuHttpRequest,'\0',sizeof(qiniuHttpRequest));
-      
-      content_length=picLen+2*strlen(photo_key)+strlen(photo_token)+HTTP_BODY_STRING_SIZE;    
-//      sprintf(tmp_size,"%d",content_length);
-//      http_header_size=strlen(tmp_size)+HTTP_HEADER_STRING_SIZE;
-           
-      len =sprintf(qiniuHttpRequest,"POST http://upload.qiniu.com/  HTTP/1.1\r\nContent-Type:multipart/form-data;boundary=%s\r\nHost: upload.qiniu.com\r\nContent-Length:%d\r\n\r\n%s\r\nContent-Disposition:form-data; name=\"token\"\r\n\r\n%s\r\n%s\r\nContent-Disposition:form-data; name=\"key\"\r\n\r\n%s\r\n%s\r\nContent-Disposition:form-data;name=\"file\";filename=\"%s\"\r\nContent-Type:image/jpeg\r\n\r\n",
-                   boundary,content_length,boundary_start,photo_token,boundary_start,photo_key,boundary_start,photo_key);    
-      
-//      user_log("uart_data_recv: [%d],[%d],[%d],%s,%d,%d,%d,%d", picLen,486+picLen,content_length,tmp_size,http_header_size,len,http_header_size+content_length-picLen-30,strlen(tmp_size));
-      
-      if( !send_get_photo( 0, picLen,qiniuHttpRequest+len,0) )
-      { 
-        user_log("error get phtoto : [%02X,%02X,%02X,%02X]", qiniuHttpRequest[len],qiniuHttpRequest[1+len],qiniuHttpRequest[len+picLen-2],qiniuHttpRequest[len+picLen-1]);
-        continue;
-      }
-      
-//      user_log("uart_data_recv: [%02X,%02X,%02X,%02X]", qiniuHttpRequest[len],qiniuHttpRequest[1+len],qiniuHttpRequest[len+picLen-2],qiniuHttpRequest[len+picLen-1]);
-      break;
-    }
-    
-    strcpy(qiniuHttpRequest+len+picLen,boundary_end);
-    
-//    user_log("http qinniu:len=%d,body=%.*s",strlen(qiniuHttpRequest),486+160,qiniuHttpRequest);   
-    
-    int remoteTcpClient_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    err = connect(remoteTcpClient_fd, &addr, sizeof(addr));
-    require_noerr_quiet(err, ReConnWithDelay);    
-//    user_log("Remote server connected at port: %d, fd: %d",  addr.s_port,remoteTcpClient_fd);
-    
-    err = SocketSend( remoteTcpClient_fd, qiniuHttpRequest, len+picLen+strlen(boundary_end) );
-    
-    
-    //            len = recv( remoteTcpClient_fd, outDataBuffer, 500, 0 );
-    
-    
-    ECS_HTTPHeaderClear( httpHeader );
-    err = ECS_SocketReadHTTPHeader( remoteTcpClient_fd, httpHeader );
-    
-    if(httpHeader->statusCode==ECS_kStatusOK){
-      hasImage=true;
-      mico_rtos_set_semaphore(&switch_change_sem) ;
-    }
-    
-//                user_log("httpHeader: %s", httpHeader->buf);
-//                user_log("http status: %d", httpHeader->statusCode);
-//                user_log("http body: %s", httpHeader->extraDataPtr);
-//                user_log("Remote server return len: %d,content:%s",  len,outDataBuffer);
-    SocketClose(&remoteTcpClient_fd);
-    
+//    }
   }
-  
 ReConnWithDelay:
- if(remoteTcpClient_fd != -1){
+  if(remoteTcpClient_fd != -1){
     SocketClose(&remoteTcpClient_fd);
-     user_log("httpHeader: error.......");
+    user_log("httpHeader: error.......");
   }
   
 exit:
@@ -198,6 +211,8 @@ void user_downstream_thread(void* arg)
   mico_rtos_init_semaphore( &take_photo_sem, 1);  
   require(app_context, exit);
   
+//  mico_rtos_set_semaphore(&take_photo_sem)    ;  /////edit by hhnext zhang
+  
   /* thread loop to handle cloud message */
   while(1){
     mico_thread_msleep(200);
@@ -213,9 +228,9 @@ void user_downstream_thread(void* arg)
     err = MiCOFogCloudMsgRecv(app_context, &recv_msg, 100);
     if(kNoErr == err){
       // debug log in MICO dubug uart
-      user_log("Cloud => Module: topic[%d]=[%.*s]\tdata[%d]=[%.*s]", 
-               recv_msg->topic_len, recv_msg->topic_len, recv_msg->data, 
-               recv_msg->data_len, recv_msg->data_len, recv_msg->data + recv_msg->topic_len);
+//      user_log("Cloud => Module: topic[%d]=[%.*s]\tdata[%d]=[%.*s]", 
+//               recv_msg->topic_len, recv_msg->topic_len, recv_msg->data, 
+//               recv_msg->data_len, recv_msg->data_len, recv_msg->data + recv_msg->topic_len);
       
       // parse json data from the msg, get led control value
       recv_json_object = json_tokener_parse((const char*)(recv_msg->data + recv_msg->topic_len));
@@ -270,7 +285,7 @@ void user_downstream_thread(void* arg)
               }else{
                 hsb2rgb_led_close();  // close rgb led
               }
-              
+              msg_id=1;
               mico_rtos_set_semaphore(&switch_change_sem) ;
             }
           }
@@ -278,9 +293,14 @@ void user_downstream_thread(void* arg)
             temp_switch = json_object_get_int(val);
             if(temp_switch!=pump_switch){
               pump_switch = temp_switch;
-              
+               msg_id=2;
               mico_rtos_set_semaphore(&switch_change_sem) ;
             }
+          }
+          else if(!strcmp(key, "system_status")){
+            msg_id=3;
+            mico_rtos_set_semaphore(&switch_change_sem) ;
+            
           }
           else{}
         }

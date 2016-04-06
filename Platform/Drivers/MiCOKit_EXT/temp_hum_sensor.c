@@ -33,9 +33,9 @@ OSStatus temp_hum_sensor_init(void)
   OSStatus err = kUnknownErr;
   uint8_t ret = 0;
 
-  err = bme280_sensor_init();
-  if(kNoErr != err){  // bme280 not work, use DHT11
-    bme280_sensor_deinit();
+//  err = bme280_sensor_init();
+//  if(kNoErr != err){  // bme280 not work, use DHT11
+//    bme280_sensor_deinit();
     
     ret = DHT11_Init();
     if(0 != ret){  // init error
@@ -45,10 +45,10 @@ OSStatus temp_hum_sensor_init(void)
       temp_hum_sensor_type = MICOKIT_TEMP_HUM_SENSOR_DHT11;
       err = kNoErr;
     }
-  }
-  else{  // use bme280
-    temp_hum_sensor_type = MICOKIT_TEMP_HUM_SENSOR_BME280;
-  }
+//  }
+//  else{  // use bme280
+//    temp_hum_sensor_type = MICOKIT_TEMP_HUM_SENSOR_BME280;
+//  }
 
   return err;
 }

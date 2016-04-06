@@ -27,6 +27,7 @@
 #include "VGM128064/oled.h"
 #include "P9813/hsb2rgb_led.h"
 #include "camera.h"
+#include "am2301.h"
 /* User defined debug log functions
  * Add your own tag like: 'USER', the tag will be added at the beginning of a log
  * in MICO debug uart, when you call this function.
@@ -81,27 +82,142 @@ OSStatus user_main( app_context_t * const app_context )
   err = user_uartInit();
   require_noerr_action( err, exit, user_log("ERROR: user_uartInit err = %d.", err) );
   
+  
+  MicoGpioInitialize( (mico_gpio_t)MICO_GPIO_2, OUTPUT_PUSH_PULL );     // 485 direction
+  
+   MicoGpioInitialize( (mico_gpio_t)MICO_GPIO_17, OUTPUT_PUSH_PULL );   // i2c scl , am2301
+  
+  MicoGpioInitialize( (mico_gpio_t)MICO_GPIO_19, OUTPUT_PUSH_PULL );
+  MicoGpioInitialize( (mico_gpio_t)MICO_GPIO_35, OUTPUT_PUSH_PULL );  
+  MicoGpioInitialize( (mico_gpio_t)MICO_GPIO_34, OUTPUT_PUSH_PULL );
+  MicoGpioInitialize( (mico_gpio_t)MICO_GPIO_36, OUTPUT_PUSH_PULL );
+  MicoGpioInitialize( (mico_gpio_t)MICO_GPIO_37, OUTPUT_PUSH_PULL );
+  MicoGpioInitialize( (mico_gpio_t)MICO_GPIO_38, OUTPUT_PUSH_PULL );
+  MicoGpioInitialize( (mico_gpio_t)MICO_GPIO_27, OUTPUT_PUSH_PULL );
   MicoGpioInitialize( (mico_gpio_t)MICO_GPIO_16, OUTPUT_PUSH_PULL );
   
-  //  user_log("start photo...");
-  //  unsigned char* image="hello world";
-  //  user_uartSend( image,strlen(image));
-  //  char aa[200];
-  //  
+  
+  MicoGpioOutputLow( (mico_gpio_t)MICO_GPIO_19 );
+  MicoGpioOutputLow( (mico_gpio_t)MICO_GPIO_16 );
+  MicoGpioOutputLow( (mico_gpio_t)MICO_GPIO_27 );
+  MicoGpioOutputLow( (mico_gpio_t)MICO_GPIO_34 );
+  MicoGpioOutputLow( (mico_gpio_t)MICO_GPIO_35 );
+  MicoGpioOutputLow( (mico_gpio_t)MICO_GPIO_36);
+  MicoGpioOutputLow( (mico_gpio_t)MICO_GPIO_37 );
+  MicoGpioOutputLow( (mico_gpio_t)MICO_GPIO_38 );
+  
+  MicoGpioOutputHigh( (mico_gpio_t)MICO_GPIO_2 );  
+  
+//  user_log("start GPIO test  ...");
+//  user_log("start 1 test...");
+//  mico_thread_msleep(1*1000);
+//  MicoGpioOutputHigh( (mico_gpio_t)MICO_GPIO_16 );
+//  mico_thread_msleep(1*1000);
+//  MicoGpioOutputLow( (mico_gpio_t)MICO_GPIO_16 );
+//  user_log("start 2 test...");
+//  mico_thread_msleep(1*1000);
+//  MicoGpioOutputHigh( (mico_gpio_t)MICO_GPIO_19 );
+//  mico_thread_msleep(1*1000);
+//  MicoGpioOutputLow( (mico_gpio_t)MICO_GPIO_19 );
+//  user_log("start 3 test...");
+//  mico_thread_msleep(1*1000);
+//  MicoGpioOutputHigh( (mico_gpio_t)MICO_GPIO_27 );
+//  mico_thread_msleep(1*1000);
+//  MicoGpioOutputLow( (mico_gpio_t)MICO_GPIO_27 );
+//  user_log("start 4 test...");
+//  mico_thread_msleep(1*1000);
+//  MicoGpioOutputHigh( (mico_gpio_t)MICO_GPIO_34 );
+//  mico_thread_msleep(1*1000);
+//  MicoGpioOutputLow( (mico_gpio_t)MICO_GPIO_34 );  
+//  user_log("start 5 test...");
+//  mico_thread_msleep(1*1000);
+//  MicoGpioOutputHigh( (mico_gpio_t)MICO_GPIO_35 );
+//  mico_thread_msleep(1*1000);
+//  MicoGpioOutputLow( (mico_gpio_t)MICO_GPIO_35 );
+//  user_log("start 6 test...");
+//  mico_thread_msleep(1*1000);
+//  MicoGpioOutputHigh( (mico_gpio_t)MICO_GPIO_36 );
+//  mico_thread_msleep(1*1000);
+//  MicoGpioOutputLow( (mico_gpio_t)MICO_GPIO_36 );
+//  user_log("start 7 test...");
+//  mico_thread_msleep(1*1000);
+//  MicoGpioOutputHigh( (mico_gpio_t)MICO_GPIO_37 );
+//  mico_thread_msleep(1*1000);
+//  MicoGpioOutputLow( (mico_gpio_t)MICO_GPIO_37 );
+//  user_log("start 8 test...");
+//  mico_thread_msleep(1*1000);
+//  MicoGpioOutputHigh( (mico_gpio_t)MICO_GPIO_38 );
+//  mico_thread_msleep(1*1000);
+//  MicoGpioOutputLow( (mico_gpio_t)MICO_GPIO_38 );
+  
+    uint8_t ret = 0;
+    /* init humiture sensor DHT11 */
+  do{
+    ret = AM2301_Init();
+    if(0 != ret){  // init error
+      user_log("AM2301 init failed!");
+      err = kNoResourcesErr;
+      mico_thread_sleep(1);  // sleep 1s then retry
+    }
+    else{
+      err = kNoErr;
+      break;
+    }
+  }while(kNoErr != err);
+  
+  /* thread loop */
+  float AM2301_temperature = 0.0;
+  float AM2301_humidity = 0.0;
+  
+//  MicoGpioInitialize( (mico_gpio_t)MICO_GPIO_17, OUTPUT_PUSH_PULL );
+  while(1){
+    
+//  MicoGpioOutputHigh( (mico_gpio_t)MICO_GPIO_17 );
+//  Delay_us(500); 
+//  MicoGpioOutputLow( (mico_gpio_t)MICO_GPIO_17 );
+//  Delay_us(500); 
+    
+  Delay_ms(2*1000);
+  // do data acquisition
+  ret = AM2301_Read_Data(&AM2301_temperature, &AM2301_humidity);
+  if(0 != ret){
+    err = kReadErr;
+    user_log("AM2301 read failed!");
+  }
+  else{
+    err = kNoErr;
+    user_log("AM2301_temperature=%.2f, AM2301_humidity=%.2f",AM2301_temperature, AM2301_humidity);
+  }
+  }
+  
+  
+//  MicoGpioOutputHigh( (mico_gpio_t)MICO_GPIO_2 );  
+//  user_log("start uart test...");
+//  unsigned char* image="hello world";
+// 
+//    user_uartSend( image,strlen(image));
+////     mico_thread_msleep(100);
+// 
+//  char aa[200];  
 //  memset(aa, '\0', 200);
-//  
+//  MicoGpioOutputLow( (mico_gpio_t)MICO_GPIO_2 );
 //  mico_thread_sleep(5);
-//  
-//  int len=user_uartRecv((unsigned char *)aa, 200);
+//  int len=0;
+//  len=user_uartRecv((unsigned char *)aa, 200);
 //  user_log("uart_data_recv: [%d][%.*s]", len,  len,(unsigned char*)aa);
-//  user_log("end...");
-  
-  
+ 
   require(app_context, exit);
   
-  hsb2rgb_led_init();   // init rgb led
-  hsb2rgb_led_close();  // close rgb led
- 
+//  hsb2rgb_led_init();   // init rgb led
+//  hsb2rgb_led_close();  // close rgb led
+// 
+  
+  //start camera thread 
+  err = mico_rtos_create_thread(&take_photo_thread_handle, MICO_APPLICATION_PRIORITY, "take photo", 
+                                take_photo_thread, STACK_SIZE_TAKE_PHOTO_THREAD, 
+                                NULL );
+  require_noerr_action( err, exit, user_log("ERROR: create take photo thread failed!") ); 
+  
   // start the downstream thread to handle user command
   err = mico_rtos_create_thread(&user_downstrem_thread_handle, MICO_APPLICATION_PRIORITY, "user_downstream", 
                                 user_downstream_thread, STACK_SIZE_USER_DOWNSTREAM_THREAD, 
@@ -118,12 +234,11 @@ OSStatus user_main( app_context_t * const app_context )
                                   user2_upstream_thread, STACK_SIZE_USER2_UPSTREAM_THREAD, 
                                   app_context );
   require_noerr_action( err, exit, user_log("ERROR: create user_uptream thread failed!") );
-  //start camera thread 
-  err = mico_rtos_create_thread(&take_photo_thread_handle, MICO_APPLICATION_PRIORITY, "take photo", 
-                                take_photo_thread, STACK_SIZE_TAKE_PHOTO_THREAD, 
-                                NULL );
-  require_noerr_action( err, exit, user_log("ERROR: create take photo thread failed!") );    
   
+  
+   user_log("test  camera...");
+
+   
   // user_main loop, update oled display every 1s
   while(1){
     mico_thread_msleep(500);

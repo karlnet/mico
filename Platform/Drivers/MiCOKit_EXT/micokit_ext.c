@@ -34,45 +34,45 @@ extern void user_key2_long_pressed_callback(void);
 OSStatus user_modules_init(void)
 {
   OSStatus err = kUnknownErr;
-  char oled_show_line[OLED_DISPLAY_MAX_CHAR_PER_ROW+1] = {'\0'};   // max char each line
-#if defined(MICO_EXT_KEY1)||defined(MICO_EXT_KEY2)
-  button_init_t init;
-#endif
+//  char oled_show_line[OLED_DISPLAY_MAX_CHAR_PER_ROW+1] = {'\0'};   // max char each line
+//#if defined(MICO_EXT_KEY1)||defined(MICO_EXT_KEY2)
+//  button_init_t init;
+//#endif
 
   
-  // init DC Motor(GPIO)
-  dc_motor_init();
-  dc_motor_set(0);   // off
+//  // init DC Motor(GPIO)
+//  dc_motor_init();
+//  dc_motor_set(0);   // off
   
-  // init RGB LED(P9813)
-  rgb_led_init();
-  rgb_led_open(0, 0, 0);  // off
+//  // init RGB LED(P9813)
+//  rgb_led_init();
+//  rgb_led_open(0, 0, 0);  // off
   
-  // init OLED
-  OLED_Init();
-  OLED_Clear();
-  snprintf(oled_show_line, OLED_DISPLAY_MAX_CHAR_PER_ROW+1, "%s", (uint8_t*)MODEL);
-  OLED_ShowString(OLED_DISPLAY_COLUMN_START, OLED_DISPLAY_ROW_1, (uint8_t*)oled_show_line);
-  memset(oled_show_line, '\0', OLED_DISPLAY_MAX_CHAR_PER_ROW+1);
-  snprintf(oled_show_line, OLED_DISPLAY_MAX_CHAR_PER_ROW+1, "%s", (uint8_t*)"MiCO            ");
-  OLED_ShowString(OLED_DISPLAY_COLUMN_START, OLED_DISPLAY_ROW_2, (uint8_t*)oled_show_line);
-  OLED_ShowString(OLED_DISPLAY_COLUMN_START, OLED_DISPLAY_ROW_3, (uint8_t*)"   Starting... ");
-  OLED_ShowString(OLED_DISPLAY_COLUMN_START, OLED_DISPLAY_ROW_4, (uint8_t*)"                ");
+//  // init OLED
+//  OLED_Init();
+//  OLED_Clear();
+//  snprintf(oled_show_line, OLED_DISPLAY_MAX_CHAR_PER_ROW+1, "%s", (uint8_t*)MODEL);
+//  OLED_ShowString(OLED_DISPLAY_COLUMN_START, OLED_DISPLAY_ROW_1, (uint8_t*)oled_show_line);
+//  memset(oled_show_line, '\0', OLED_DISPLAY_MAX_CHAR_PER_ROW+1);
+//  snprintf(oled_show_line, OLED_DISPLAY_MAX_CHAR_PER_ROW+1, "%s", (uint8_t*)"MiCO            ");
+//  OLED_ShowString(OLED_DISPLAY_COLUMN_START, OLED_DISPLAY_ROW_2, (uint8_t*)oled_show_line);
+//  OLED_ShowString(OLED_DISPLAY_COLUMN_START, OLED_DISPLAY_ROW_3, (uint8_t*)"   Starting... ");
+//  OLED_ShowString(OLED_DISPLAY_COLUMN_START, OLED_DISPLAY_ROW_4, (uint8_t*)"                ");
   
-  // init Light sensor(ADC)
-  light_sensor_init();
+//  // init Light sensor(ADC)
+//  light_sensor_init();
+//  
+//  // init infrared sensor(ADC)
+//  infrared_reflective_init();
   
-  // init infrared sensor(ADC)
-  infrared_reflective_init();
-  
-  // init user key1 && key2
-#ifdef MICO_EXT_KEY1
-  init.gpio = MICO_EXT_KEY1;
-  init.pressed_func = user_key1_clicked_callback;
-  init.long_pressed_func = NULL;
-  init.long_pressed_timeout = 5000;
-  button_init( IOBUTTON_USER_1, init);
-#endif
+//  // init user key1 && key2
+//#ifdef MICO_EXT_KEY1
+//  init.gpio = MICO_EXT_KEY1;
+//  init.pressed_func = user_key1_clicked_callback;
+//  init.long_pressed_func = NULL;
+//  init.long_pressed_timeout = 5000;
+//  button_init( IOBUTTON_USER_1, init);
+//#endif
 
 //#ifdef MICO_EXT_KEY2
 //  init.gpio = MICO_EXT_KEY2;
